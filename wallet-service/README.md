@@ -31,6 +31,8 @@ Check `src/main/resources/application.properties` for configuration.
 
 ## 🔌 API Endpoints
 
+Full API documentation available via **Swagger UI**: http://localhost:8080/swagger-ui/index.html
+
 ### Auth
 - `POST /api/auth/login`: Simple login (Demo implementation).
 

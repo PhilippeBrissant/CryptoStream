@@ -26,6 +26,9 @@ docker-compose up -d --build
 
 Access the application at **http://localhost**.
 
+### API Documentation (Swagger)
+- **Wallet Service**: http://localhost:8080/swagger-ui.html (or `/swagger-ui/index.html`)
+
 ### Default Login
 - **Email**: `test@demo.com`
 - **Password**: `hashed`
