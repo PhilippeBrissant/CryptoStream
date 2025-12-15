@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  wallet-service:
+    build: ./wallet-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/cryptostream
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    depends_on:
+      - postgres
+    networks:
+      - crypto-net
+
+  market-service:
+    build: ./market-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SERVER_PORT=8081
+    networks:
+      - crypto-net
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=cryptostream
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - crypto-net
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - wallet-service
+      - market-service
+    networks:
+      - crypto-net
+
+networks:
+  crypto-net:
+    driver: bridge

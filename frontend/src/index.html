@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoStream</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --bg: #1a1a1a;
+            --surface: #2d2d2d;
+            --text: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+
+        header {
+            background: #000;
+            padding: 1rem 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .logo {
+            color: var(--primary);
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .card {
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            margin-top: 2rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: #333;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .error {
+            color: #ff5252;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .balance-amount {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .ticker {
+            background: #333;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .ticker:hover {
+            transform: translateY(-2px);
+            background: #3a3a3a;
+        }
+
+        .price-up {
+            color: #4CAF50;
+        }
+
+        .price-down {
+            color: #FF5252;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn-sell {
+            background: #D32F2F;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="container logo">CryptoStream</div>
+    </header>
+
+    <div class="container">
+
+        <!-- Login View -->
+        <div id="loginView" class="card">
+            <h2 style="text-align: center;">Login</h2>
+            <input type="email" id="email" placeholder="Email (e.g., test@demo.com)" value="test@demo.com">
+            <input type="password" id="password" placeholder="Password" value="hashed">
+            <button onclick="login()">Sign In</button>
+            <div id="loginError" class="error hidden">Invalid credentials</div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboardView" class="hidden">
+            <div class="dashboard-header">
+                <h3>Portfolio</h3>
+                <button onclick="logout()" style="width: auto; background: #333;">Logout</button>
+            </div>
+
+            <div class="balance-card">
+                <div>Total Balance (USD)</div>
+                <div class="balance-amount" id="balanceDisplay">$0.00</div>
+            </div>
+
+            <div class="card" style="margin-top: 1rem;">
+                <h3>Live Prices</h3>
+                <div id="priceGrid" class="grid">
+                    <div class="ticker">
+                        <h3>BTC</h3>
+                        <p id="price-btc">Loading...</p>
+                    </div>
+                    <div class="ticker">
+                        <h3>ETH</h3>
+                        <p id="price-eth">Loading...</p>
+                    </div>
+                    <div class="ticker">
+                        <h3>SOL</h3>
+                        <p id="price-sol">Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Quick Trade</h3>
+                <div class="actions">
+                    <button onclick="trade('BUY')">Buy BTC ($500)</button>
+                    <button class="btn-sell" onclick="trade('SELL')">Sell BTC ($500)</button>
+                </div>
+                <button onclick="requestReport()" style="margin-top: 1rem; background: #1976D2;">Generate Report
+                    (PDF)</button>
+                <div id="message" style="margin-top:10px; text-align:center;"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentUser = null;
+        let ws = null;
+
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error('Login failed');
+                    return res.json();
+                })
+                .then(user => {
+                    currentUser = user;
+                    document.getElementById('loginView').classList.add('hidden');
+                    document.getElementById('dashboardView').classList.remove('hidden');
+                    updateBalance(user.balanceUsd);
+                    connectWs();
+                    refreshPortfolio();
+                })
+                .catch(err => {
+                    document.getElementById('loginError').classList.remove('hidden');
+                });
+        }
+
+        function logout() {
+            currentUser = null;
+            if (ws) ws.close();
+            document.getElementById('loginView').classList.remove('hidden');
+            document.getElementById('dashboardView').classList.add('hidden');
+        }
+
+        function updateBalance(amount) {
+            document.getElementById('balanceDisplay').innerText = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+        }
+
+        function connectWs() {
+            if (ws) ws.close();
+            ws = new WebSocket(`ws://${window.location.host}/ws/prices`);
+
+            ws.onmessage = (event) => {
+                const prices = JSON.parse(event.data);
+                if (prices.bitcoin) updatePrice('btc', prices.bitcoin.usd);
+                if (prices.ethereum) updatePrice('eth', prices.ethereum.usd);
+                if (prices.solana) updatePrice('sol', prices.solana.usd);
+            };
+        }
+
+        function updatePrice(symbol, price) {
+            const el = document.getElementById(`price-${symbol}`);
+            el.innerText = `$${price}`;
+            el.classList.add('price-up');
+            setTimeout(() => el.classList.remove('price-up'), 500);
+        }
+
+        function trade(type) {
+            // Simplified trade for BTC
+            const payload = {
+                userId: currentUser.id,
+                symbol: 'BTC',
+                amount: type === 'BUY' ? 0.01 : 0.01,
+                price: parseFloat(document.getElementById('price-btc').innerText.replace('$', '')) || 50000
+            };
+
+            const endpoint = type === 'BUY' ? '/api/wallet/trade/buy' : '/api/wallet/trade/sell';
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(res => res.json())
+                .then(res => {
+                    refreshPortfolio();
+                    showMessage(`${type} successful!`, 'green');
+                })
+                .catch(err => showMessage('Trade failed', 'red'));
+        }
+
+        function refreshPortfolio() {
+            fetch(`/api/wallet/${currentUser.id}`)
+                .then(res => res.json())
+                .then(user => updateBalance(user.balanceUsd));
+        }
+
+        function requestReport() {
+            fetch(`/api/wallet/${currentUser.id}/report`, { method: 'POST' })
+                .then(() => showMessage('Report requested! Check logs.', '#1976D2'));
+        }
+
+        function showMessage(text, color) {
+            const el = document.getElementById('message');
+            el.innerText = text;
+            el.style.color = color;
+            setTimeout(() => el.innerText = '', 3000);
+        }
+    </script>
+</body>
+
+</html>
