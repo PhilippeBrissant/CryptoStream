@@ -35,6 +35,16 @@ services:
     networks:
       - crypto-net
 
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8082:8080"
+    depends_on:
+      - postgres
+    networks:
+      - crypto-net
+
   frontend:
     build: ./frontend
     ports:

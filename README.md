@@ -26,6 +26,14 @@ docker-compose up -d --build
 
 Access the application at **http://localhost**.
 
+### DB Management
+- **Adminer**: http://localhost:8082
+  - **System**: PostgreSQL
+  - **Server**: `postgres`
+  - **Username**: `postgres`
+  - **Password**: `postgres`
+  - **Database**: `cryptostream`
+
 ### API Documentation (Swagger)
 - **Wallet Service**: http://localhost:8080/swagger-ui.html (or `/swagger-ui/index.html`)
 
